@@ -16,13 +16,18 @@ const Constants = {
 
 
 let inputConfig = input.config();
-const programParticipationId = inputConfig.programParticipationId;
-const programSymptom = inputConfig.programSymptom;
-const programAxis = inputConfig.programAxis;
-const programLevel = inputConfig.programLevel;
-const programWeek = inputConfig.programWeek;
-const userId = inputConfig.userId;
+var program = {};
+program["programParticipationId"] = inputConfig.programParticipationId;
+program["symptom"] = inputConfig.programSymptom;
+program["symptomFrench"] = inputConfig.programSymptomFrench;
+program["axis"] = inputConfig.programAxis;
+program["axisFrench"] = inputConfig.programAxisFrench;
+program["level"] = inputConfig.programLevel;
+program["week"] = inputConfig.programWeek;
+program["userId"] = inputConfig.userId;
+program["createdDate"] = Date.now();//inputConfig.programCreatedDate;
 
+console.log("createdDate from program_participation table : ", inputConfig.programCreatedDate);
 
 
 const remindersTable = base.getTable(Constants.REMINDERS_TABLE);
@@ -39,7 +44,7 @@ const remindersQuery = await remindersTable.selectRecordsAsync({
 })
 
 
-const symptomFilteredRecordsQuery = remindersQuery.records.filter(record => record.name.includes(programSymptom))
+const symptomFilteredRecordsQuery = remindersQuery.records.filter(record => record.name.includes(program.symptom))
 
 
 const symptomFilteredReminders = symptomFilteredRecordsQuery.map(record => {
@@ -56,37 +61,44 @@ const symptomFilteredReminders = symptomFilteredRecordsQuery.map(record => {
 
 const filteredReminders = symptomFilteredReminders.filter(reminder =>
     reminder.task !== null
-    && reminder.axis.includes(programAxis)
-    && reminder.programLevel === programLevel
+    && reminder.axis.includes(program.axis)
+    && reminder.programLevel === program.level
 
 )
 
-console.log(filteredReminders)
 
-console.log(Date.now())
+Date.prototype.addDays = function(days) {
+    var date = new Date(this.valueOf());
+    date.setDate(date.getDate() + days);
+    return date;
+}
 
-const mondays = [new Date('August 30, 2021')]
-// TODO separate level in reminders excel :)
-//TODO generate reminders for right days of week
+function findReminderDate(date, reminderDay, programWeek){
+    let dateObject = new Date(date);
+    let dayOfWeek = dateObject.getDay(); // monday = 1, tuesday = 2 etc
+    let reminderDate = dateObject.addDays(-dayOfWeek + 7 * programWeek + reminderDay);
+    let reminderDateObject = new Date(reminderDate);
+    return reminderDateObject.toLocaleDateString('en-US')  // adalo is on US language date formats mm/dd/yyyy
+}
 
-let plannedRemindersToCreate = [];
 
+plannedRemindersToCreate = []
 filteredReminders.forEach(
     function(reminder){
         plannedRemindersToCreate.push(
             {
                 fields : {
-                    "user_id" : userId,
+                    "user_id" : program.userId,
                     "symptom" : reminder.symptom,
-                    "symptom_french" : "",
+                    "symptom_french" : program.symptomFrench,
                     "axis" : reminder.axis,
-                    "axis_french" : "",
-                    "week" : programWeek,
+                    "axis_french" : program.axisFrench,
+                    "week" : program.week,
                     "day_of_week" : reminder.day,
-                    "date" : "30/08/2021",
+                    "date" : findReminderDate(program.createdDate, reminder.day, program.week),
                     "task": reminder.task,
                     "link1" : reminder.link1,
-                    "link1_title" : reminder.link1Title,
+                    "link1_title" : reminder.link1Title
                 }
             }
         )

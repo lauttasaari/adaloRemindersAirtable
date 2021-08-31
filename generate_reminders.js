@@ -25,8 +25,9 @@ program["axisFrench"] = inputConfig.programAxisFrench;
 program["level"] = inputConfig.programLevel;
 program["week"] = inputConfig.programWeek;
 program["userId"] = inputConfig.userId;
-program["createdDate"] = Date.now();//inputConfig.programCreatedDate;
+program["createdDate"] = Date.now(); //inputConfig.programCreatedDate;
 
+console.log("coucou")
 console.log("createdDate from program_participation table : ", inputConfig.programCreatedDate);
 
 
@@ -73,7 +74,8 @@ Date.prototype.addDays = function(days) {
     return date;
 }
 
-function findReminderDate(date, reminderDay, programWeek){
+// if starts next monday, function not used anymore
+function findReminderDateMondayVersion(date, reminderDay, programWeek){
     let dateObject = new Date(date);
     let dayOfWeek = dateObject.getDay(); // monday = 1, tuesday = 2 etc
     let reminderDate = dateObject.addDays(-dayOfWeek + 7 * programWeek + reminderDay);
@@ -81,10 +83,27 @@ function findReminderDate(date, reminderDay, programWeek){
     return reminderDateObject.toLocaleDateString('en-US')  // adalo is on US language date formats mm/dd/yyyy
 }
 
+// if starts next monday, function not used anymore
+function findReminderDate(date, reminderDay, programWeek){
+    let dateObject = new Date(date);
+    let reminderDate = dateObject.addDays(7 * (programWeek - 1) + reminderDay); // first reminder is just the next day
+    let reminderDateObject = new Date(reminderDate);
+    return [reminderDateObject, reminderDateObject.toLocaleDateString('fr-FR')] // adalo is on language of browser (jane's google chrome) date formats --> Ddd/mm/yyyy
+}
+
+
+// if starts next monday, function not used anymore
+function findReminderDate(date, reminderDay, programWeek){
+    let dateObject = new Date(date);
+    let reminderDate = dateObject.addDays(7 * (programWeek - 1) + reminderDay); // first reminder is just the next day
+    let reminderDateObject = new Date(reminderDate);
+    return reminderDateObject.toISOString().split('T')[0] // // yyyy-mm-dd corresponds to adalo s No Formatting of dates
+}
 
 plannedRemindersToCreate = []
 filteredReminders.forEach(
     function(reminder){
+        console.log("the found date : ", findReminderDate(program.createdDate, reminder.day, program.week))
         plannedRemindersToCreate.push(
             {
                 fields : {
@@ -95,7 +114,7 @@ filteredReminders.forEach(
                     "axis_french" : program.axisFrench,
                     "week" : program.week,
                     "day_of_week" : reminder.day,
-                    "date" : findReminderDate(program.createdDate, reminder.day, program.week),
+                    "date_string" : findReminderDate(program.createdDate, reminder.day, program.week),
                     "task": reminder.task,
                     "link1" : reminder.link1,
                     "link1_title" : reminder.link1Title
@@ -104,6 +123,7 @@ filteredReminders.forEach(
         )
     }
 )
+
 
 console.log(plannedRemindersToCreate)
 let plannedRemindersTable = base.getTable("planned_reminders");
